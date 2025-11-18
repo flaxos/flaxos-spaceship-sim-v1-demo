@@ -297,13 +297,13 @@ class DemoSimController:
         self,
         ship_id: str,
         thrust_vector: List[float],
-        rotation_input_deg_s: float,
+        rotation_input_deg_s: Any,
     ) -> Dict[str, Any]:
         """
         Update helm controls.
 
         - thrust_vector[2] = forward throttle [-1, 1]
-        - rotation_input_deg_s = yaw rate (deg/s)
+        - rotation_input_deg_s = yaw rate (deg/s) or dict {yaw,pitch,roll}
 
         The physics loop consumes these fields each tick and moves the ship.
         """
@@ -312,9 +312,18 @@ class DemoSimController:
             logger.warning("set_helm_input: unknown ship_id=%s", ship_id)
             return {"error": "unknown_ship", "ship_id": ship_id}
 
+        if isinstance(rotation_input_deg_s, dict):
+            rotation_payload = {
+                "yaw": float(rotation_input_deg_s.get("yaw", 0.0)),
+                "pitch": float(rotation_input_deg_s.get("pitch", 0.0)),
+                "roll": float(rotation_input_deg_s.get("roll", 0.0)),
+            }
+        else:
+            rotation_payload = float(rotation_input_deg_s)
+
         controls = ship.setdefault("controls", {})
         controls["thrust_vector"] = list(thrust_vector)
-        controls["rotation_deg_s"] = float(rotation_input_deg_s)
+        controls["rotation_deg_s"] = rotation_payload
 
         logger.info(
             "set_helm_input: %s thrust=%s rotation_deg_s=%s",

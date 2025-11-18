@@ -140,10 +140,19 @@ class APIV1TCPServer(socketserver.ThreadingTCPServer):
             raise ValueError("ship_id is required")
         if not isinstance(thrust_vector, (list, tuple)) or len(thrust_vector) != 3:
             raise ValueError("thrust_vector must be a 3-element list")
+        # Rotation input can be a single yaw rate or a dict including pitch/roll.
+        if isinstance(rotation_input_deg_s, dict):
+            rotation_payload = {
+                "yaw": float(rotation_input_deg_s.get("yaw", 0.0)),
+                "pitch": float(rotation_input_deg_s.get("pitch", 0.0)),
+                "roll": float(rotation_input_deg_s.get("roll", 0.0)),
+            }
+        else:
+            rotation_payload = float(rotation_input_deg_s)
         return self.sim_controller.set_helm_input(
             ship_id=ship_id,
             thrust_vector=list(thrust_vector),
-            rotation_input_deg_s=float(rotation_input_deg_s),
+            rotation_input_deg_s=rotation_payload,
         )
 
 
