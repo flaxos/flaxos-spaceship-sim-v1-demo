@@ -9,6 +9,113 @@ from typing import Any, Dict, List, Optional
 
 API_VERSION = "1.0"
 
+DEFAULT_ROTATION_LIMIT_DEG_S = 10.0
+
+
+def clamp(value: float, min_value: float = -1.0, max_value: float = 1.0) -> float:
+    return max(min_value, min(max_value, value))
+
+
+def parse_thrust_command(args: List[str], current_vector: List[float]) -> List[float]:
+    """
+    Parse a thrust command into a new thrust vector.
+
+    Args:
+        args: CLI tokens after "thrust".
+        current_vector: Current thrust vector to update.
+
+    Returns a new clamped thrust vector (sx, sy, sfwd).
+    """
+
+    try:
+        magnitude = abs(float(args[0]))
+    except (ValueError, IndexError):
+        raise ValueError("Magnitude must be a number between 0 and 1.")
+
+    magnitude = clamp(magnitude, 0.0, 1.0)
+
+    direction = "forward"
+    if len(args) >= 2:
+        direction = args[1].lower()
+
+    if direction == "stop":
+        return [0.0, 0.0, 0.0]
+
+    dir_map = {
+        "forward": (2, 1.0),
+        "back": (2, -1.0),
+        "reverse": (2, -1.0),
+        "backward": (2, -1.0),
+        "left": (1, 1.0),
+        "right": (1, -1.0),
+        "up": (0, 1.0),
+        "down": (0, -1.0),
+    }
+
+    if direction not in dir_map:
+        raise ValueError("Direction must be one of: forward, back, left, right, up, down, stop")
+
+    idx, sign = dir_map[direction]
+    new_vec = list(current_vector)
+    new_vec[idx] = clamp(sign * magnitude)
+    return new_vec
+
+
+def parse_rotation_command(
+    axis: str,
+    args: List[str],
+    current_rotation: Dict[str, float],
+    rotation_limits: Dict[str, float],
+) -> Dict[str, float]:
+    """
+    Parse a rotation command for yaw/pitch/roll.
+
+    Updates only the specified axis while keeping the other values.
+    """
+
+    axis = axis.lower()
+    if axis not in ("yaw", "pitch", "roll"):
+        raise ValueError("Axis must be yaw, pitch, or roll")
+
+    limit = float(rotation_limits.get(axis, DEFAULT_ROTATION_LIMIT_DEG_S))
+
+    direction_tokens = {
+        "yaw": {"left": 1.0, "right": -1.0},
+        "pitch": {"up": 1.0, "down": -1.0},
+        "roll": {"left": 1.0, "right": -1.0},
+    }
+
+    # Allow shorthand stop for rotation axes
+    if args and args[0].lower() == "stop":
+        new_rotation = dict(current_rotation)
+        new_rotation[axis] = 0.0
+        return new_rotation
+
+    try:
+        magnitude = abs(float(args[0]))
+    except (ValueError, IndexError):
+        raise ValueError(f"{axis.capitalize()} rate must be a number (degrees per second).")
+
+    direction = args[1].lower() if len(args) >= 2 else None
+    if direction is None:
+        sign = 1.0
+    elif direction == "stop":
+        sign = 0.0
+    else:
+        sign_map = direction_tokens[axis]
+        if direction not in sign_map:
+            raise ValueError(
+                "Direction must be one of: left/right for yaw/roll, up/down for pitch, or stop"
+            )
+        sign = sign_map[direction]
+
+    magnitude = clamp(magnitude, 0.0, limit)
+    new_value = clamp(sign * magnitude, -limit, limit)
+
+    new_rotation = dict(current_rotation)
+    new_rotation[axis] = new_value
+    return new_rotation
+
 
 class ApiError(RuntimeError):
     pass
@@ -143,6 +250,11 @@ class ShipOsShell:
         # Local cached control state for helm
         self.thrust_vector: List[float] = [0.0, 0.0, 0.0]
         self.rotation_deg_s: Dict[str, float] = {"yaw": 0.0, "pitch": 0.0, "roll": 0.0}
+        self.rotation_limits: Dict[str, float] = {
+            "yaw": DEFAULT_ROTATION_LIMIT_DEG_S,
+            "pitch": DEFAULT_ROTATION_LIMIT_DEG_S,
+            "roll": DEFAULT_ROTATION_LIMIT_DEG_S,
+        }
 
     # ----------------- Utility & printing helpers -----------------
 
@@ -171,6 +283,7 @@ class ShipOsShell:
         controls = own.get("controls") or {}
         thrust_vec = controls.get("thrust_vector")
         rot = controls.get("rotation_deg_s")
+        physics = own.get("physics") or {}
 
         if isinstance(thrust_vec, list) and len(thrust_vec) == 3:
             self.thrust_vector = [float(thrust_vec[0]), float(thrust_vec[1]), float(thrust_vec[2])]
@@ -178,6 +291,15 @@ class ShipOsShell:
             self.rotation_deg_s["yaw"] = float(rot.get("yaw", 0.0))
             self.rotation_deg_s["pitch"] = float(rot.get("pitch", 0.0))
             self.rotation_deg_s["roll"] = float(rot.get("roll", 0.0))
+        self.rotation_limits["yaw"] = float(
+            physics.get("max_rcs_yaw_deg_s", self.rotation_limits["yaw"])
+        )
+        self.rotation_limits["pitch"] = float(
+            physics.get("max_rcs_pitch_deg_s", self.rotation_limits["pitch"])
+        )
+        self.rotation_limits["roll"] = float(
+            physics.get("max_rcs_roll_deg_s", self.rotation_limits["roll"])
+        )
 
     # ----------------- Command loop -----------------
 
@@ -248,17 +370,22 @@ class ShipOsShell:
           quit / exit              Leave the shell
 
         Helm context (context helm):
-          thrust <mag> [forward|back|stop]
-                                   Set main thrust vector (0..1). Default direction=forward.
+          thrust <mag> [forward|back|left|right|up|down|stop]
+                                   Set thrust vector component (0..1). Default direction=forward.
           yaw <deg_per_s> [left|right|stop]
-                                   Set yaw rotation (deg/sec). Positive = left, negative = right.
+                                   Set yaw rotation (deg/sec). Default=left. Shorthand: yaw <deg>.
+          pitch <deg_per_s> [up|down|stop]
+                                   Set pitch rotation (deg/sec). Default=up. Shorthand: pitch <deg>.
+          roll <deg_per_s> [left|right|stop]
+                                   Set roll rotation (deg/sec). Default=left. Shorthand: roll <deg>.
+          rot stop                  Zero all rotation rates.
 
         Nav context (context nav):
           autopilot manual         Disable AP (manual control)
           autopilot coast          Enable AP coast mode
           autopilot kill-velocity  Enable AP kill_vel mode
-          autopilot chase <target_id> [range_m]
-                                   Enable AP chase_target mode
+          autopilot point-at <target_id>
+                                   Enable AP point_at_target mode
 
         Sensors context (context sensors):
           ping active              Active sensor ping
@@ -281,7 +408,27 @@ class ShipOsShell:
 
     def cmd_state(self) -> None:
         state = self.client.get_state(self.ship_id)
-        self.pretty_print(state)
+        own = state.get("own_ship") or {}
+
+        orientation_euler = own.get("orientation_euler_deg")
+        if not isinstance(orientation_euler, dict):
+            orientation_euler = {
+                "yaw": float(own.get("orientation_deg", 0.0)),
+                "pitch": 0.0,
+                "roll": 0.0,
+            }
+
+        summary = {
+            "server_time": state.get("server_time"),
+            "own_ship": {
+                "id": own.get("id"),
+                "position": own.get("position"),
+                "velocity": own.get("velocity"),
+                "orientation_euler_deg": orientation_euler,
+                "controls": own.get("controls"),
+            },
+        }
+        self.pretty_print(summary)
 
     def cmd_mission(self) -> None:
         mission = self.client.get_mission()
@@ -294,45 +441,29 @@ class ShipOsShell:
             self.cmd_helm_thrust(args)
         elif cmd == "yaw":
             self.cmd_helm_yaw(args)
+        elif cmd == "pitch":
+            self.cmd_helm_pitch(args)
+        elif cmd == "roll":
+            self.cmd_helm_roll(args)
+        elif cmd == "rot":
+            self.cmd_helm_rot_stop(args)
         else:
-            print(f"[WARN] Unknown helm command '{cmd}'. Try: thrust, yaw, or 'help'.")
+            print(
+                f"[WARN] Unknown helm command '{cmd}'. Try: thrust, yaw, pitch, roll, rot, or 'help'."
+            )
 
     def cmd_helm_thrust(self, args: List[str]) -> None:
         if not args:
-            print("Usage: thrust <magnitude 0..1> [forward|back|stop]")
+            print("Usage: thrust <magnitude 0..1> [forward|back|left|right|up|down|stop]")
             return
 
         try:
-            magnitude = float(args[0])
-        except ValueError:
-            print("Magnitude must be a number between 0 and 1.")
+            self.thrust_vector = parse_thrust_command(args, self.thrust_vector)
+        except ValueError as exc:
+            print(exc)
             return
 
-        if magnitude < 0.0 or magnitude > 1.0:
-            print("Magnitude should be in range 0..1.")
-            return
-
-        direction = "forward"
-        if len(args) >= 2:
-            direction = args[1].lower()
-
-        if direction == "stop":
-            self.thrust_vector = [0.0, 0.0, 0.0]
-        elif direction == "forward":
-            # Forward along ship's local 'forward' axis (mapped in the sim)
-            self.thrust_vector = [0.0, 0.0, magnitude]
-        elif direction in ("back", "reverse", "backward"):
-            self.thrust_vector = [0.0, 0.0, -magnitude]
-        else:
-            print("Direction must be one of: forward, back, stop")
-            return
-
-        payload = self.client.set_helm_input(
-            ship_id=self.ship_id,
-            thrust_vector=self.thrust_vector,
-            rotation_deg_s=self.rotation_deg_s,
-        )
-        # For now just print minimal confirmation
+        self._send_helm_update()
         print(
             json.dumps(
                 {
@@ -349,32 +480,74 @@ class ShipOsShell:
             return
 
         try:
-            rate = float(args[0])
-        except ValueError:
-            print("Yaw rate must be a number (degrees per second).")
+            self.rotation_deg_s = parse_rotation_command(
+                axis="yaw",
+                args=args,
+                current_rotation=self.rotation_deg_s,
+                rotation_limits=self.rotation_limits,
+            )
+        except ValueError as exc:
+            print(exc)
             return
 
-        direction = "left"
-        if len(args) >= 2:
-            direction = args[1].lower()
+        self._send_helm_update()
+        self._print_rotation_state()
 
-        if direction == "stop":
-            yaw_value = 0.0
-        elif direction == "left":
-            yaw_value = rate
-        elif direction == "right":
-            yaw_value = -rate
-        else:
-            print("Direction must be one of: left, right, stop")
+    def cmd_helm_pitch(self, args: List[str]) -> None:
+        if not args:
+            print("Usage: pitch <deg_per_s> [up|down|stop]")
             return
 
-        self.rotation_deg_s["yaw"] = yaw_value
+        try:
+            self.rotation_deg_s = parse_rotation_command(
+                axis="pitch",
+                args=args,
+                current_rotation=self.rotation_deg_s,
+                rotation_limits=self.rotation_limits,
+            )
+        except ValueError as exc:
+            print(exc)
+            return
 
-        payload = self.client.set_helm_input(
+        self._send_helm_update()
+        self._print_rotation_state()
+
+    def cmd_helm_roll(self, args: List[str]) -> None:
+        if not args:
+            print("Usage: roll <deg_per_s> [left|right|stop]")
+            return
+
+        try:
+            self.rotation_deg_s = parse_rotation_command(
+                axis="roll",
+                args=args,
+                current_rotation=self.rotation_deg_s,
+                rotation_limits=self.rotation_limits,
+            )
+        except ValueError as exc:
+            print(exc)
+            return
+
+        self._send_helm_update()
+        self._print_rotation_state()
+
+    def cmd_helm_rot_stop(self, args: List[str]) -> None:
+        if args and args[0].lower() not in ("stop", "0", "zero"):
+            print("Usage: rot stop")
+            return
+
+        self.rotation_deg_s = {"yaw": 0.0, "pitch": 0.0, "roll": 0.0}
+        self._send_helm_update()
+        self._print_rotation_state()
+
+    def _send_helm_update(self) -> None:
+        self.client.set_helm_input(
             ship_id=self.ship_id,
             thrust_vector=self.thrust_vector,
             rotation_deg_s=self.rotation_deg_s,
         )
+
+    def _print_rotation_state(self) -> None:
         print(
             json.dumps(
                 {
@@ -395,7 +568,7 @@ class ShipOsShell:
 
     def cmd_nav_autopilot(self, args: List[str]) -> None:
         if not args:
-            print("Usage: autopilot manual|coast|kill-velocity|chase <target_id> [range_m]")
+            print("Usage: autopilot manual|coast|kill-velocity|point-at <target_id>")
             return
 
         mode = args[0].lower()
@@ -429,31 +602,22 @@ class ShipOsShell:
             self.pretty_print(payload)
             return
 
-        if mode == "chase":
+        if mode == "point-at":
             if len(args) < 2:
-                print("Usage: autopilot chase <target_id> [range_m]")
+                print("Usage: autopilot point-at <target_id>")
                 return
             target_id = args[1]
-            desired_range_m = 1000.0
-            if len(args) >= 3:
-                try:
-                    desired_range_m = float(args[2])
-                except ValueError:
-                    print("Range must be a number (metres). Using default 1000.")
-            params = {
-                "target_id": target_id,
-                "desired_range_m": desired_range_m,
-            }
+            params = {"target_entity_id": target_id}
             payload = self.client.set_autopilot_mode(
                 ship_id=self.ship_id,
                 enabled=True,
-                mode="chase_target",
+                mode="point_at_target",
                 params=params,
             )
             self.pretty_print(payload)
             return
 
-        print("Unknown autopilot mode. Use: manual, coast, kill-velocity, chase ...")
+        print("Unknown autopilot mode. Use: manual, coast, kill-velocity, point-at ...")
 
     # ----------------- SENSORS -----------------
 

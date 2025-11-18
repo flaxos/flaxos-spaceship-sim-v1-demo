@@ -7,11 +7,13 @@ import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from sim import physics_v2
+
 from server.api_server_v1 import run_api_server
+from sim import physics_v2
+from sim import autopilot
 from sim.missions import load_mission_and_fleet
 from sim.sensors import SensorsManager
-from sim.physics import GravBody, update_world, yaw_deg_to_forward_vector
+from sim.physics import GravBody, update_projectiles, yaw_deg_to_forward_vector
 from config.canonical_loader import load_ship_config
 
 logger = logging.getLogger("demo_v2")
@@ -71,6 +73,14 @@ class DemoSimControllerV2:
                 float(spawn["velocity"][2]),
             ]
             ship["orientation_deg"] = float(entry["orientation_deg"])
+            ship.setdefault(
+                "orientation_euler_deg",
+                {
+                    "yaw": float(entry.get("orientation_deg", 0.0)),
+                    "pitch": 0.0,
+                    "roll": 0.0,
+                },
+            )
             ship["team"] = entry.get("team", ship.get("team"))
             ship["is_player"] = bool(entry.get("is_player", False))
 
@@ -120,6 +130,8 @@ class DemoSimControllerV2:
                 {
                     "max_main_thrust_newton": 1_000_000.0,
                     "max_rcs_yaw_deg_s": 10.0,
+                    "max_rcs_pitch_deg_s": 10.0,
+                    "max_rcs_roll_deg_s": 10.0,
                 },
             )
 
@@ -160,7 +172,11 @@ class DemoSimControllerV2:
             # Apply behavioural autopilot before physics integration.
             self._apply_autopilot()
 
-            update_world(self.ships, self.projectiles, self.gravity_bodies, self.dt)
+            for ship in self.ships:
+                physics_v2.update_ship_physics(
+                    ship, self.dt, grav_bodies=self.gravity_bodies
+                )
+            update_projectiles(self.projectiles, self.dt, self.gravity_bodies)
             self._update_sensors()
             time.sleep(self.dt)
 
@@ -186,8 +202,8 @@ class DemoSimControllerV2:
         - coast: sets thrust and rotation to zero (ship coasts).
         - kill_vel: rotate to oppose current velocity vector and burn to
           reduce speed; disables AP when speed is near zero.
-        - chase_target: rotate towards current_target_id and apply forward
-          thrust to reduce range.
+        - chase_target: legacy target chase (yaw-only).
+        - point_at_target: orient nose toward a target position/entity.
         """
 
         for ship in self.ships:
@@ -205,6 +221,8 @@ class DemoSimControllerV2:
                 self._ap_mode_kill_vel(ship, ap)
             elif mode == "chase_target":
                 self._ap_mode_chase_target(ship, ap)
+            elif mode == "point_at_target":
+                self._ap_mode_point_at_target(ship, ap)
             else:
                 logger.debug(
                     "Unknown autopilot mode '%s' for ship %s; disabling",
@@ -225,49 +243,29 @@ class DemoSimControllerV2:
         )
 
     def _ap_mode_kill_vel(self, ship: Dict[str, Any], ap: Dict[str, Any]) -> None:
-        """Kill velocity: attempt to null current velocity vector."""
+        """Kill velocity: attempt to null current velocity vector in 3D."""
         ship_id = ship.get("id")
         vel = ship.get("velocity") or [0.0, 0.0, 0.0]
-        vx, vy, vz = float(vel[0]), float(vel[1]), float(vel[2])
-        speed = math.sqrt(vx * vx + vy * vy + vz * vz)
+        speed = math.sqrt(float(vel[0]) ** 2 + float(vel[1]) ** 2 + float(vel[2]) ** 2)
 
-        stop_threshold = 0.5
+        stop_threshold = 0.05
+        helm_inputs = autopilot.compute_kill_velocity_helm_inputs(ship)
         if speed < stop_threshold:
-            self.set_helm_input(
-                ship_id=ship_id,
-                thrust_vector=[0.0, 0.0, 0.0],
-                rotation_input_deg_s={"yaw": 0.0, "pitch": 0.0, "roll": 0.0},
-                mode="autopilot_kill_vel_complete",
-            )
             ap["enabled"] = False
             ap["mode"] = "manual"
-            logger.info("kill_vel complete for %s; speed=%.3f m/s", ship_id, speed)
-            return
+            logger.info("kill_vel complete for %s; speed=%.5f", ship_id, speed)
+            helm_inputs = {
+                "thrust_vector": [0.0, 0.0, 0.0],
+                "rotation_deg_s": {"yaw": 0.0, "pitch": 0.0, "roll": 0.0},
+            }
 
-        yaw_current = float(ship.get("orientation_deg", 0.0))
-        yaw_target = math.degrees(math.atan2(-vy, -vx))
-        yaw_error = (yaw_target - yaw_current + 540.0) % 360.0 - 180.0
-
-        k_yaw = 1.0
-        yaw_cmd = k_yaw * yaw_error
-
-        physics_cfg = ship.get("physics") or {}
-        max_yaw_rate = float(physics_cfg.get("max_rcs_yaw_deg_s", 10.0))
-        if yaw_cmd > max_yaw_rate:
-            yaw_cmd = max_yaw_rate
-        elif yaw_cmd < -max_yaw_rate:
-            yaw_cmd = -max_yaw_rate
-
-        throttle = min(1.0, speed / 20.0)
-        if throttle < 0.1:
-            throttle = 0.1
-
-        self.set_helm_input(
-            ship_id=ship_id,
-            thrust_vector=[0.0, 0.0, throttle],
-            rotation_input_deg_s={"yaw": yaw_cmd, "pitch": 0.0, "roll": 0.0},
-            mode="autopilot_kill_vel",
-        )
+        if helm_inputs:
+            self.set_helm_input(
+                ship_id=ship_id,
+                thrust_vector=helm_inputs["thrust_vector"],
+                rotation_input_deg_s=helm_inputs["rotation_deg_s"],
+                mode="autopilot_kill_vel",
+            )
 
     def _ap_mode_chase_target(self, ship: Dict[str, Any], ap: Dict[str, Any]) -> None:
         """Chase target: orient towards target and apply forward thrust."""
@@ -337,6 +335,32 @@ class DemoSimControllerV2:
             rotation_input_deg_s={"yaw": yaw_cmd, "pitch": 0.0, "roll": 0.0},
             mode="autopilot_chase_target",
         )
+
+    def _ap_mode_point_at_target(self, ship: Dict[str, Any], ap: Dict[str, Any]) -> None:
+        """Orient nose toward a target position/entity without applying thrust."""
+
+        params = ap.get("params") or {}
+        target_pos = params.get("target_position")
+        target_entity_id = params.get("target_entity_id")
+
+        if target_entity_id:
+            for entity in self.ships + self.projectiles:
+                if entity.get("id") == target_entity_id:
+                    target_pos = entity.get("position")
+                    break
+
+        if not (isinstance(target_pos, (list, tuple)) and len(target_pos) == 3):
+            logger.debug("point_at_target: no valid target position for ship %s", ship.get("id"))
+            return
+
+        helm_inputs = autopilot.compute_point_at_target_helm_inputs(ship, target_pos)
+        if helm_inputs:
+            self.set_helm_input(
+                ship_id=ship.get("id"),
+                thrust_vector=helm_inputs["thrust_vector"],
+                rotation_input_deg_s=helm_inputs["rotation_deg_s"],
+                mode="autopilot_point_at_target",
+            )
 
     # ------------------------------------------------------------------
     # API v1.0 handlers
@@ -488,7 +512,7 @@ class DemoSimControllerV2:
                 "mode": mode,
             }
 
-        allowed_modes = {"manual", "coast", "kill_vel", "chase_target"}
+        allowed_modes = {"manual", "coast", "kill_vel", "chase_target", "point_at_target"}
         chosen_mode = mode or "manual"
         if chosen_mode not in allowed_modes:
             logger.warning("set_autopilot_mode: invalid mode %s for ship %s", chosen_mode, ship_id)
@@ -500,10 +524,27 @@ class DemoSimControllerV2:
                 "allowed_modes": sorted(allowed_modes),
             }
 
+        ap_params = params or {}
+        if chosen_mode == "point_at_target":
+            if "target_position" in ap_params:
+                tp = ap_params["target_position"]
+                if not (isinstance(tp, (list, tuple)) and len(tp) == 3):
+                    return {
+                        "error": "invalid_params",
+                        "ship_id": ship_id,
+                        "details": "target_position must be a 3-element list",
+                    }
+            elif "target_entity_id" not in ap_params:
+                return {
+                    "error": "invalid_params",
+                    "ship_id": ship_id,
+                    "details": "point_at_target requires target_position or target_entity_id",
+                }
+
         ap = ship.setdefault("autopilot", {})
         ap["enabled"] = bool(enabled) and (chosen_mode != "manual")
         ap["mode"] = chosen_mode
-        ap["params"] = params or {}
+        ap["params"] = ap_params
 
         logger.info(
             "set_autopilot_mode: ship=%s enabled=%s mode=%s params=%s",
@@ -558,11 +599,16 @@ class DemoSimControllerV2:
 
         physics_cfg = ship.get("physics") or {}
         max_yaw_rate_deg_s = float(physics_cfg.get("max_rcs_yaw_deg_s", 10.0))
+        max_pitch_rate_deg_s = float(
+            physics_cfg.get("max_rcs_pitch_deg_s", max_yaw_rate_deg_s)
+        )
+        max_roll_rate_deg_s = float(
+            physics_cfg.get("max_rcs_roll_deg_s", max_yaw_rate_deg_s)
+        )
 
-        if yaw_rate > max_yaw_rate_deg_s:
-            yaw_rate = max_yaw_rate_deg_s
-        elif yaw_rate < -max_yaw_rate_deg_s:
-            yaw_rate = -max_yaw_rate_deg_s
+        yaw_rate = max(-max_yaw_rate_deg_s, min(max_yaw_rate_deg_s, yaw_rate))
+        pitch_rate = max(-max_pitch_rate_deg_s, min(max_pitch_rate_deg_s, pitch_rate))
+        roll_rate = max(-max_roll_rate_deg_s, min(max_roll_rate_deg_s, roll_rate))
 
         controls = ship.setdefault("controls", {})
         controls["thrust_vector"] = thrust
