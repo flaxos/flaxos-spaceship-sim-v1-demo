@@ -244,7 +244,8 @@ class SensorsManager:
             return True
         half = fov_deg / 2.0
         diff = (bearing_deg - orientation_deg + 540.0) % 360.0 - 180.0
-        return -half <= diff <= half
+        # Use strict bounds so edge-on targets (diff == +/- half) are excluded.
+        return -half < diff < half
 
     @staticmethod
     def _detection_strength(base_sig: float, rng_km: float, sensor_range_km: float, ecm: float, eccm: float, sensitivity: float) -> float:
