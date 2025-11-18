@@ -1,0 +1,30 @@
+# Python / venv
+.venv/
+env/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE
+.idea/
+.vscode/
+
+# OS crap
+.DS_Store
+Thumbs.db
+
+# Local debug / logs / scratch
+debug_runs/
+debug_two_clients/
+debug_physics/
+*.log
+
+# Distribution artefacts
+*.zip
+dist/
+build/
+
+# Jupyter or temp
+*.ipynb_checkpoints/

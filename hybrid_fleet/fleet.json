@@ -1,0 +1,37 @@
+{
+  "id": "demo_interceptor_vs_target",
+  "name": "Interceptor vs Target (Sprint 2 Demo)",
+  "description": "Player interceptor vs target dummy with PDC and ECM.",
+  "mission": {
+    "id": "mission_interceptor_vs_target",
+    "title": "Interceptor vs Target",
+    "briefing": "Close-range demo mission.",
+    "win_condition": "destroy_target",
+    "lose_condition": "player_destroyed",
+    "notes": "See missions/mission_interceptor_vs_target.json for full mission."
+  },
+  "ships": [
+    {
+      "ship_config_file": "ships/interceptor.json",
+      "spawn": {
+        "position": [0.0, 0.0, 0.0],
+        "velocity": [0.0, 0.0, 0.0]
+      },
+      "orientation_deg": 0.0,
+      "team": "blue",
+      "is_player": true,
+      "behaviour": "player"
+    },
+    {
+      "ship_config_file": "ships/target_dummy_pdc_ecm.json",
+      "spawn": {
+        "position": [20000.0, 0.0, 0.0],
+        "velocity": [0.0, 0.0, 0.0]
+      },
+      "orientation_deg": 180.0,
+      "team": "red",
+      "is_player": false,
+      "behaviour": "evasive_ai"
+    }
+  ]
+}

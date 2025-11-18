@@ -1,0 +1,43 @@
+{
+  "name": "02_get_mission",
+  "duration_s": 0.0,
+  "response": {
+    "api_version": "1.0",
+    "request_id": "2",
+    "action": "get_mission",
+    "status": "ok",
+    "payload": {
+      "id": "mission_interceptor_vs_target",
+      "title": "Interceptor vs Target",
+      "description": "Player interceptor engages a target dummy at medium range.",
+      "fleet": {
+        "fleet_dir": "hybrid_fleet",
+        "fleet_file": "fleet.json",
+        "fleet_id": "demo_interceptor_vs_target",
+        "fleet_name": "Interceptor vs Target (Sprint 2 Demo)"
+      },
+      "win_condition": {
+        "type": "destroy_team",
+        "team": "red"
+      },
+      "lose_condition": {
+        "type": "destroy_team",
+        "team": "blue"
+      },
+      "time_limit_s": null,
+      "metadata": {
+        "difficulty": "normal",
+        "tags": [
+          "demo",
+          "interceptor_vs_target"
+        ]
+      },
+      "server_info": {
+        "server_version": "1.0.0",
+        "api_version": "1.0"
+      }
+    },
+    "error": null
+  },
+  "status": "ok"
+}

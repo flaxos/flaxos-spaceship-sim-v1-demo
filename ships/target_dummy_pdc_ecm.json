@@ -1,0 +1,36 @@
+{
+  "id": "target_dummy_1",
+  "name": "Target Dummy",
+  "team": "red",
+  "mass_kg": 2000000,
+  "position": [20000.0, 0.0, 0.0],
+  "velocity": [0.0, 0.0, 0.0],
+  "orientation_deg": 180.0,
+  "signature": {
+    "base_radar": 1.0,
+    "base_thermal": 1.0
+  },
+  "systems": {
+    "sensors": {
+      "passive": {
+        "range_km": 150.0,
+        "fov_deg": 360.0,
+        "sensitivity": 0.8
+      }
+    },
+    "ecm_eccm": {
+      "ecm_strength": 0.4,
+      "eccm_strength": 0.0
+    },
+    "point_defence": {
+      "systems": [
+        {
+          "id": "pd_1",
+          "type": "pdc",
+          "arc_deg": 360.0,
+          "range_km": 5.0
+        }
+      ]
+    }
+  }
+}

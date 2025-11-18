@@ -1,0 +1,281 @@
+{
+  "name": "09_fire_weapon_and_projectile_motion",
+  "duration_s": 1.502,
+  "projectile_id": "interceptor_alpha_proj_1",
+  "projectile_seen_initial": true,
+  "projectile_seen_later": true,
+  "projectile_delta_distance": 2001.7795021153643,
+  "fire_response": {
+    "api_version": "1.0",
+    "request_id": "16",
+    "action": "command.fire_weapon",
+    "status": "ok",
+    "payload": {
+      "projectile_id": "interceptor_alpha_proj_1"
+    },
+    "error": null
+  },
+  "state1": {
+    "api_version": "1.0",
+    "request_id": "17",
+    "action": "get_state",
+    "status": "ok",
+    "payload": {
+      "server_time": 33.0000000000002,
+      "own_ship": {
+        "id": "interceptor_alpha",
+        "name": "Interceptor Alpha",
+        "team": "blue",
+        "mass_kg": 1000000,
+        "position": [
+          22.09495491067209,
+          1.1628684873072739,
+          0.0
+        ],
+        "velocity": [
+          1.4361844275284557,
+          -0.2052120859954011,
+          0.0
+        ],
+        "orientation_deg": 20.0,
+        "signature": {
+          "base_radar": 1.0,
+          "base_thermal": 1.0
+        },
+        "systems": {
+          "sensors": {
+            "passive": {
+              "range_km": 200.0,
+              "fov_deg": 360.0,
+              "sensitivity": 1.0
+            },
+            "active": {
+              "range_km": 300.0,
+              "fov_deg": 60.0,
+              "ping_cooldown_s": 5.0,
+              "beam_width_deg": 5.0
+            }
+          },
+          "ecm_eccm": {
+            "ecm_strength": 0.0,
+            "eccm_strength": 0.2
+          },
+          "point_defence": {
+            "systems": [
+              {
+                "id": "pd_1",
+                "type": "pdc",
+                "arc_deg": 120.0,
+                "range_km": 5.0
+              }
+            ]
+          }
+        },
+        "is_player": true,
+        "controls": {
+          "thrust_vector": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "rotation_deg_s": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "roll": 0.0
+          }
+        },
+        "physics": {
+          "max_main_thrust_newton": 1000000.0,
+          "max_rcs_yaw_deg_s": 10.0
+        },
+        "autopilot": {
+          "enabled": false,
+          "mode": "manual",
+          "params": {}
+        }
+      },
+      "contacts": [
+        {
+          "contact_id": "interceptor_alpha::target_dummy_1",
+          "sensor_ship_id": "interceptor_alpha",
+          "target_entity_id": "target_dummy_1",
+          "first_seen_time": 0.1,
+          "last_seen_time": 33.0000000000002,
+          "last_detection_type": "passive",
+          "range_km": 19.97790507893329,
+          "bearing_deg": 359.99666494278426,
+          "strength": 0.7200883796842669,
+          "stale": false
+        },
+        {
+          "contact_id": "interceptor_alpha::interceptor_alpha_proj_1",
+          "sensor_ship_id": "interceptor_alpha",
+          "target_entity_id": "interceptor_alpha_proj_1",
+          "first_seen_time": 32.60000000000019,
+          "last_seen_time": 33.0000000000002,
+          "last_detection_type": "passive",
+          "range_km": 1.00015,
+          "bearing_deg": 20.000000000000004,
+          "strength": 0.35819973,
+          "stale": false
+        }
+      ],
+      "projectiles": [
+        {
+          "id": "interceptor_alpha_proj_1",
+          "type": "torpedo",
+          "team": "blue",
+          "position": [
+            961.9285295896984,
+            343.2343148344749,
+            0.0
+          ],
+          "velocity": [
+            1881.2912723097381,
+            684.0060846370048,
+            0.0
+          ],
+          "mass_kg": 100.0,
+          "ttl": 299.4999999999999,
+          "signature": {
+            "base_radar": 0.3,
+            "base_thermal": 0.5
+          }
+        }
+      ]
+    },
+    "error": null
+  },
+  "state2": {
+    "api_version": "1.0",
+    "request_id": "18",
+    "action": "get_state",
+    "status": "ok",
+    "payload": {
+      "server_time": 34.00000000000021,
+      "own_ship": {
+        "id": "interceptor_alpha",
+        "name": "Interceptor Alpha",
+        "team": "blue",
+        "mass_kg": 1000000,
+        "position": [
+          23.014308396768296,
+          0.769545322482755,
+          0.0
+        ],
+        "velocity": [
+          0.4964918067425476,
+          -0.5472322293210699,
+          0.0
+        ],
+        "orientation_deg": 20.0,
+        "signature": {
+          "base_radar": 1.0,
+          "base_thermal": 1.0
+        },
+        "systems": {
+          "sensors": {
+            "passive": {
+              "range_km": 200.0,
+              "fov_deg": 360.0,
+              "sensitivity": 1.0
+            },
+            "active": {
+              "range_km": 300.0,
+              "fov_deg": 60.0,
+              "ping_cooldown_s": 5.0,
+              "beam_width_deg": 5.0
+            }
+          },
+          "ecm_eccm": {
+            "ecm_strength": 0.0,
+            "eccm_strength": 0.2
+          },
+          "point_defence": {
+            "systems": [
+              {
+                "id": "pd_1",
+                "type": "pdc",
+                "arc_deg": 120.0,
+                "range_km": 5.0
+              }
+            ]
+          }
+        },
+        "is_player": true,
+        "controls": {
+          "thrust_vector": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "rotation_deg_s": {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "roll": 0.0
+          }
+        },
+        "physics": {
+          "max_main_thrust_newton": 1000000.0,
+          "max_rcs_yaw_deg_s": 10.0
+        },
+        "autopilot": {
+          "enabled": false,
+          "mode": "manual",
+          "params": {}
+        }
+      },
+      "contacts": [
+        {
+          "contact_id": "interceptor_alpha::target_dummy_1",
+          "sensor_ship_id": "interceptor_alpha",
+          "target_entity_id": "target_dummy_1",
+          "first_seen_time": 0.1,
+          "last_seen_time": 34.00000000000021,
+          "last_detection_type": "passive",
+          "range_km": 19.97698570642529,
+          "bearing_deg": 359.9977928752725,
+          "strength": 0.7200920571742989,
+          "stale": false
+        },
+        {
+          "contact_id": "interceptor_alpha::interceptor_alpha_proj_1",
+          "sensor_ship_id": "interceptor_alpha",
+          "target_entity_id": "interceptor_alpha_proj_1",
+          "first_seen_time": 32.60000000000019,
+          "last_seen_time": 34.00000000000021,
+          "last_detection_type": "passive",
+          "range_km": 3.0011999999999994,
+          "bearing_deg": 20.0,
+          "strength": 0.35459784,
+          "stale": false
+        }
+      ],
+      "projectiles": [
+        {
+          "id": "interceptor_alpha_proj_1",
+          "type": "torpedo",
+          "team": "blue",
+          "position": [
+            2843.219801899436,
+            1027.2403994714796,
+            0.0
+          ],
+          "velocity": [
+            1881.2912723097381,
+            684.0060846370048,
+            0.0
+          ],
+          "mass_kg": 100.0,
+          "ttl": 298.49999999999966,
+          "signature": {
+            "base_radar": 0.3,
+            "base_thermal": 0.5
+          }
+        }
+      ]
+    },
+    "error": null
+  },
+  "status": "ok"
+}

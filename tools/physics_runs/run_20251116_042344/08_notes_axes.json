@@ -1,0 +1,5 @@
+{
+  "name": "08_notes_axes",
+  "note": "Current physics model implements forward/back thrust and yaw (rotation around Z). Lateral translation (sideways/up-down RCS) is not yet implemented; this probe therefore validates main drive + yaw, not full 6DOF.",
+  "status": "info"
+}

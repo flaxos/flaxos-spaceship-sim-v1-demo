@@ -1,0 +1,42 @@
+{
+  "id": "interceptor_alpha",
+  "name": "Interceptor Alpha",
+  "team": "blue",
+  "mass_kg": 1000000,
+  "position": [0.0, 0.0, 0.0],
+  "velocity": [0.0, 0.0, 0.0],
+  "orientation_deg": 0.0,
+  "signature": {
+    "base_radar": 1.0,
+    "base_thermal": 1.0
+  },
+  "systems": {
+    "sensors": {
+      "passive": {
+        "range_km": 200.0,
+        "fov_deg": 360.0,
+        "sensitivity": 1.0
+      },
+      "active": {
+        "range_km": 300.0,
+        "fov_deg": 60.0,
+        "ping_cooldown_s": 5.0,
+        "beam_width_deg": 5.0
+      }
+    },
+    "ecm_eccm": {
+      "ecm_strength": 0.0,
+      "eccm_strength": 0.2
+    },
+    "point_defence": {
+      "systems": [
+        {
+          "id": "pd_1",
+          "type": "pdc",
+          "arc_deg": 120.0,
+          "range_km": 5.0
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "06_active_sensor_ping",
+  "duration_s": 0.001,
+  "contacts_count": 1,
+  "response": {
+    "api_version": "1.0",
+    "request_id": "8",
+    "action": "command.ping_sensors",
+    "status": "ok",
+    "payload": {
+      "ship_id": "interceptor_alpha",
+      "mode": "active",
+      "contacts": [
+        {
+          "contact_id": "interceptor_alpha::target_dummy_1",
+          "sensor_ship_id": "interceptor_alpha",
+          "target_entity_id": "target_dummy_1",
+          "first_seen_time": 0.1,
+          "last_seen_time": 16.499999999999964,
+          "last_detection_type": "active",
+          "range_km": 19.9939,
+          "bearing_deg": 0.0,
+          "strength": 1.1200244000000001,
+          "stale": false
+        }
+      ]
+    },
+    "error": null
+  },
+  "status": "ok"
+}

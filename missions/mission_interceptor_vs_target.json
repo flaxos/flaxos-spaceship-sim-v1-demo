@@ -1,0 +1,22 @@
+{
+  "id": "mission_interceptor_vs_target",
+  "title": "Interceptor vs Target",
+  "description": "Player interceptor engages a target dummy at medium range.",
+  "fleet": {
+    "fleet_dir": "hybrid_fleet",
+    "fleet_file": "fleet.json"
+  },
+  "win_condition": {
+    "type": "destroy_team",
+    "team": "red"
+  },
+  "lose_condition": {
+    "type": "destroy_team",
+    "team": "blue"
+  },
+  "time_limit_s": null,
+  "metadata": {
+    "difficulty": "normal",
+    "tags": ["demo", "interceptor_vs_target"]
+  }
+}

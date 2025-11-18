@@ -1,0 +1,99 @@
+{
+  "name": "03_get_state_baseline",
+  "duration_s": 0.0,
+  "response": {
+    "api_version": "1.0",
+    "request_id": "3",
+    "action": "get_state",
+    "status": "ok",
+    "payload": {
+      "server_time": 12.499999999999972,
+      "own_ship": {
+        "id": "interceptor_alpha",
+        "name": "Interceptor Alpha",
+        "team": "blue",
+        "mass_kg": 1000000,
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "orientation_deg": 0.0,
+        "signature": {
+          "base_radar": 1.0,
+          "base_thermal": 1.0
+        },
+        "systems": {
+          "sensors": {
+            "passive": {
+              "range_km": 200.0,
+              "fov_deg": 360.0,
+              "sensitivity": 1.0
+            },
+            "active": {
+              "range_km": 300.0,
+              "fov_deg": 60.0,
+              "ping_cooldown_s": 5.0,
+              "beam_width_deg": 5.0
+            }
+          },
+          "ecm_eccm": {
+            "ecm_strength": 0.0,
+            "eccm_strength": 0.2
+          },
+          "point_defence": {
+            "systems": [
+              {
+                "id": "pd_1",
+                "type": "pdc",
+                "arc_deg": 120.0,
+                "range_km": 5.0
+              }
+            ]
+          }
+        },
+        "is_player": true,
+        "controls": {
+          "thrust_vector": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation_deg_s": 0.0
+        },
+        "physics": {
+          "max_main_thrust_newton": 1000000.0,
+          "max_rcs_yaw_deg_s": 10.0
+        }
+      },
+      "contacts": [
+        {
+          "contact_id": "interceptor_alpha::target_dummy_1",
+          "sensor_ship_id": "interceptor_alpha",
+          "target_entity_id": "target_dummy_1",
+          "first_seen_time": 0.1,
+          "last_seen_time": 12.499999999999972,
+          "last_detection_type": "passive",
+          "range_km": 20.0,
+          "bearing_deg": 0.0,
+          "strength": 0.7200000000000001,
+          "stale": false
+        }
+      ],
+      "projectiles": []
+    },
+    "error": null
+  },
+  "position": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "orientation_deg": 0.0,
+  "status": "ok"
+}

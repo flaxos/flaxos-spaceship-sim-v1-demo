@@ -1,0 +1,27 @@
+{
+  "name": "01_get_server_info",
+  "duration_s": 0.001,
+  "response": {
+    "api_version": "1.0",
+    "request_id": "1",
+    "action": "get_server_info",
+    "status": "ok",
+    "payload": {
+      "server_version": "1.0.0",
+      "api_version": "1.0",
+      "capabilities": [
+        "get_state",
+        "get_events",
+        "get_mission",
+        "get_server_info",
+        "command.set_target",
+        "command.fire_weapon",
+        "command.ping_sensors",
+        "command.set_autopilot_mode",
+        "command.set_helm_input"
+      ]
+    },
+    "error": null
+  },
+  "status": "ok"
+}

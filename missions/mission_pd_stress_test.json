@@ -1,0 +1,22 @@
+{
+  "id": "mission_pd_stress_test",
+  "title": "PD Stress Test",
+  "description": "Multiple incoming projectiles to test point-defence behaviour.",
+  "fleet": {
+    "fleet_dir": "hybrid_fleet",
+    "fleet_file": "fleet.json"
+  },
+  "win_condition": {
+    "type": "survive_time",
+    "value": 120.0
+  },
+  "lose_condition": {
+    "type": "destroy_team",
+    "team": "blue"
+  },
+  "time_limit_s": 120.0,
+  "metadata": {
+    "difficulty": "hard",
+    "tags": ["demo", "pd_stress"]
+  }
+}

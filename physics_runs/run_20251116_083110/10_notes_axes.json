@@ -1,0 +1,5 @@
+{
+  "name": "10_notes_axes",
+  "note": "Current physics model (Sprint 1) implements forward/back thrust and yaw (rotation around Z) only. Lateral and vertical RCS, and pitch/roll, are reserved for a later sprint; the probe therefore validates main drive + yaw + basic Newtonian behaviour.",
+  "status": "info"
+}

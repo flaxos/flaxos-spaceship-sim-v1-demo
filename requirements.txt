@@ -1,0 +1,3 @@
+# Flaxos Spaceship Sim v1.0 demo
+# For core demo and PD agent, only Python stdlib is required.
+# Optional: pytest for tests.

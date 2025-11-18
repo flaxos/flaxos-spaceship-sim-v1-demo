@@ -1,0 +1,5 @@
+{
+  "name": "12_notes_axes",
+  "note": "Physics model implements forward/back thrust and yaw only. Autopilot now supports 'coast' and 'kill_vel' (behavioural) and a simple 'chase_target' mode, which is not probed here. Lateral/vertical RCS and pitch/roll, plus richer intercept autopilot modes, are reserved for later sprints.",
+  "status": "info"
+}
