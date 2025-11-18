@@ -384,8 +384,8 @@ class ShipOsShell:
           autopilot manual         Disable AP (manual control)
           autopilot coast          Enable AP coast mode
           autopilot kill-velocity  Enable AP kill_vel mode
-          autopilot chase <target_id> [range_m]
-                                   Enable AP chase_target mode
+          autopilot point-at <target_id>
+                                   Enable AP point_at_target mode
 
         Sensors context (context sensors):
           ping active              Active sensor ping
@@ -568,7 +568,7 @@ class ShipOsShell:
 
     def cmd_nav_autopilot(self, args: List[str]) -> None:
         if not args:
-            print("Usage: autopilot manual|coast|kill-velocity|chase <target_id> [range_m]")
+            print("Usage: autopilot manual|coast|kill-velocity|point-at <target_id>")
             return
 
         mode = args[0].lower()
@@ -602,31 +602,22 @@ class ShipOsShell:
             self.pretty_print(payload)
             return
 
-        if mode == "chase":
+        if mode == "point-at":
             if len(args) < 2:
-                print("Usage: autopilot chase <target_id> [range_m]")
+                print("Usage: autopilot point-at <target_id>")
                 return
             target_id = args[1]
-            desired_range_m = 1000.0
-            if len(args) >= 3:
-                try:
-                    desired_range_m = float(args[2])
-                except ValueError:
-                    print("Range must be a number (metres). Using default 1000.")
-            params = {
-                "target_id": target_id,
-                "desired_range_m": desired_range_m,
-            }
+            params = {"target_entity_id": target_id}
             payload = self.client.set_autopilot_mode(
                 ship_id=self.ship_id,
                 enabled=True,
-                mode="chase_target",
+                mode="point_at_target",
                 params=params,
             )
             self.pretty_print(payload)
             return
 
-        print("Unknown autopilot mode. Use: manual, coast, kill-velocity, chase ...")
+        print("Unknown autopilot mode. Use: manual, coast, kill-velocity, point-at ...")
 
     # ----------------- SENSORS -----------------
 

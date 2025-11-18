@@ -125,17 +125,18 @@ class APIV1TCPServer(socketserver.ThreadingTCPServer):
         ship_id = p.get("ship_id")
         enabled = bool(p.get("enabled", True))
         mode = p.get("mode")
+        params = p.get("params") or {}
         if not ship_id:
             raise ValueError("ship_id is required")
         return self.sim_controller.set_autopilot_mode(
-            ship_id=ship_id, enabled=enabled, mode=mode
+            ship_id=ship_id, enabled=enabled, mode=mode, params=params
         )
 
     def _handle_command_set_helm_input(self, req: APIRequest) -> Dict[str, Any]:
         p = req.payload
         ship_id = p.get("ship_id")
         thrust_vector = p.get("thrust_vector", [0.0, 0.0, 0.0])
-        rotation_input_deg_s = p.get("rotation_input_deg_s", 0.0)
+        rotation_input_deg_s = p.get("rotation_deg_s", p.get("rotation_input_deg_s", 0.0))
         if not ship_id:
             raise ValueError("ship_id is required")
         if not isinstance(thrust_vector, (list, tuple)) or len(thrust_vector) != 3:
